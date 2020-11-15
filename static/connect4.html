@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Connect4</title>
+        <meta charset="UTF-8">
+        <style>
+            #board {
+                background-color: blue;
+            }
+            td.cell {
+                background-color: rgb(95, 143, 255);
+                width: 60px;
+                height: 60px;
+                margin: 2px;
+                font-size:40px;
+                text-align: center;
+            }
+            td.empty {
+                color:white;
+            }
+            td.red {
+                color:rgb(246, 75, 75);
+            }
+            td.yellow {
+                color: rgb(255, 220, 20);
+            }
+        </style>
+        <script>
+            "use strict";  // 厳密なエラーチェックを行うことを宣言
+
+            
+            var conn;
+            var RED = 1, YELLOW = 2;
+            var data = [];
+            var column = [];
+            var myTurn = false;
+            var color = RED;
+
+            const ROW = 6;
+            const COLUMN = 7;
+
+//            function init() {
+            window.onload = function () {
+                if (window["WebSocket"]) {
+                    //console.log("ws://" + document.location.host + "/ws");
+                    //conn = new WebSocket("ws://" + document.location.host + "/ws");
+                    conn = new WebSocket("ws://localhost:8080/ws");
+                    
+                    conn.onclose = function (evt) {
+                        var item = document.createElement("div");
+                        item.innerHTML = "<b>Connection closed.</b>";
+                        appendLog(item);
+                    };
+                    conn.onmessage = function (evt) {
+                        var messages = evt.data.split('\n');
+                        for (var i = 0; i < messages.length; i++) {
+                            var item = document.createElement("div");
+                            item.innerText = messages[i];
+                            appendLog(item);
+                        }
+                    };
+                } else {
+                    var item = document.createElement("div");
+                    item.innerHTML = "<b>Your browser does not support WebSockets.</b>";
+                    appendLog(item);
+                }
+
+                var b = document.getElementById("board");
+                for (var i=0;i<ROW;i++) {
+                    var tr = document.createElement("tr");
+                    data[i] = [0,0,0,0,0,0,0];
+                    for (var j=0;j<COLUMN;j++) {
+                        var td = document.createElement("td");
+                        td.className = "cell" + " " + "empty";
+                        td.id = "cell" + i + j;
+                        td.onclick = clicked;
+                        td.textContent = "●";
+                        tr.appendChild(td);
+                    }
+                    b.appendChild(tr);
+                }
+                for (var i=0;i<COLUMN;i++) {
+                    column[i] = 0;
+                }
+                update();
+            }
+
+            function showMessage(str) {
+                document.getElementById("message").textContent = str;
+            }
+
+            /* Clickしたときの処理 */
+            function clicked(e) {
+                var id = e.target.id; // セルのIDを取得
+
+                // x軸、y軸の座標を取得
+                var x = parseInt(id.charAt(5)); // 5文字目の文字コードから数値に変換
+
+                // 列に投入できるか確認する
+                // 列に投入できる石の数が決まっている
+                if (column[x] >= ROW) {
+                    console.log("ここには置けません");
+                    return;
+                }
+                var y = (ROW - 1) - column[x]++;
+
+                // 石を投入する
+                put(y,x,color);
+
+                // 勝敗判定を行う
+                var win = judge(x,y,color);
+                if (win) {
+                    var colorMessage = "赤色"
+                    if (color == YELLOW) {
+                        colorMessage = "黄色"
+                    }
+                    showMessage("勝負あり！" + colorMessage + "の勝ちです");
+                    return;
+                }
+                update();
+            }
+
+            // ターンを更新する
+            function update() {
+                if (color == RED) {
+                    color = YELLOW;
+                    showMessage("黄色のターンです");
+                } else {
+                    color = RED;
+                    showMessage("赤色のターンです");
+                }
+            }
+
+            /* 石を置く、またはひっくり返す処理 */
+            function put(i,j,color) {
+                console.log(i);
+                console.log(j);
+                console.log(color);
+                var c = document.getElementById("cell" + i + j);
+                console.log(c);
+                c.textContent = "●"
+                c.className = "cell" + " " + (color==RED ? "red" : "yellow");
+                data[i][j] = color;
+            }
+
+            // Judge 勝敗を判定します
+            function judge(x,y,color) {
+                var l = left(color, x-1, y);
+                var r = right(color, x+1, y);
+                var d = down(color, x, y+1);
+                var ld = leftDown(color, x-1, y+1);
+                var ru = rightUp(color, x+1, y-1);
+                var lu = leftUp(color, x-1, y-1);
+                var rd = rightDown(color, x+1, y+1);
+
+                if ((l + r + 1) >= 4) {
+                    return true;
+                } else if ((d + 1) >= 4) {
+                    return true;
+                } else if ((ld + ru + 1) >= 4) {
+                    return true;
+                } else if ((lu + rd + 1) >= 4) {
+                    return true;
+                } else {
+                }
+                return false;
+            }
+
+            function left(color, x, y) {
+                if (0 > x) {
+                    return 0;
+                }
+                if (data[y][x] == color) {
+                    return left(color, x-1, y) + 1;
+                }
+                return 0;
+            }
+
+            function right(color, x, y) {
+                if (x >= COLUMN) {
+                    return 0;
+                }
+                if (data[y][x] == color) {
+                    return right(color, x+1, y) + 1;
+                }
+                return 0;
+            }
+
+            function down(color, x, y) {
+                if (y >= ROW) {
+                    return 0;
+                }
+                if (data[y][x] == color) {
+                    return down(color, x, y+1) + 1;
+                }
+                return 0;
+            }
+
+            function leftUp(color, x, y) {
+                if (0 > x || 0 > y) {
+                    return 0;
+                }
+                if (data[y][x] == color) {
+                    return leftUp(color, x-1, y-1) + 1;
+                }
+                return 0;
+            }
+
+            function leftDown(color, x, y) {
+                if (0 > x || y >= ROW) {
+                    return 0;
+                }
+                if (data[y][x] == color) {
+                    return leftDown(color, x-1, y+1) + 1;
+                }
+                return 0;
+            }
+
+            function rightUp(color, x, y) {
+                if (x >= COLUMN || 0 > y) {
+                    return 0;
+                }
+                if (data[y][x] == color) {
+                    return rightUp(color, x+1, y-1) + 1;
+                }
+                return 0;
+            }
+
+            function rightDown(color, x, y) {
+                if (x >= COLUMN || y >= ROW) {
+                    return 0;
+                }
+                if (data[y][x] == color) {
+                    return rightDown(color, x+1, y+1) + 1;
+                }
+                return 0;
+            }
+
+            function appendLog(item) {
+                var doScroll = log.scrollTop > log.scrollHeight - log.clientHeight - 1;
+                log.appendChild(item);
+                if (doScroll) {
+                    log.scrollTop = log.scrollHeight - log.clientHeight;
+                }
+            }
+
+            function wsPut() {
+                // 列に投入できるか確認する
+                // 列に投入できる石の数が決まっている
+                if (column[x] >= ROW) {
+                    console.log("ここには置けません");
+                    return;
+                }
+                var y = (ROW - 1) - column[x]++;
+
+                // 石を投入する
+                put(y,x,color);
+
+                // 勝敗判定を行う
+                var win = judge(x,y,color);
+                if (win) {
+                    var colorMessage = "赤色"
+                    if (color == YELLOW) {
+                        colorMessage = "黄色"
+                    }
+                    showMessage("勝負あり！" + colorMessage + "の勝ちです");
+                    return;
+                }
+                update();
+            }
+
+        </script>
+    </head>
+    <body>
+        <h2 id="message"></h2>
+        <div id="log"></div>
+        <table id="board"></table>
+    </body>
+</html>
