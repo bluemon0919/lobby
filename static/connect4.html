@@ -39,32 +39,8 @@
             const ROW = 6;
             const COLUMN = 7;
 
-//            function init() {
-            window.onload = function () {
-                if (window["WebSocket"]) {
-                    //console.log("ws://" + document.location.host + "/ws");
-                    //conn = new WebSocket("ws://" + document.location.host + "/ws");
-                    conn = new WebSocket("ws://localhost:8080/ws");
-                    
-                    conn.onclose = function (evt) {
-                        var item = document.createElement("div");
-                        item.innerHTML = "<b>Connection closed.</b>";
-                        appendLog(item);
-                    };
-                    conn.onmessage = function (evt) {
-                        var messages = evt.data.split('\n');
-                        for (var i = 0; i < messages.length; i++) {
-                            var item = document.createElement("div");
-                            item.innerText = messages[i];
-                            appendLog(item);
-                        }
-                    };
-                } else {
-                    var item = document.createElement("div");
-                    item.innerHTML = "<b>Your browser does not support WebSockets.</b>";
-                    appendLog(item);
-                }
-
+            function init() {
+                myWebSocket();
                 var b = document.getElementById("board");
                 for (var i=0;i<ROW;i++) {
                     var tr = document.createElement("tr");
@@ -87,6 +63,9 @@
 
             function showMessage(str) {
                 document.getElementById("message").textContent = str;
+            }
+            function showLog(str) {
+                document.getElementById("log").textContent = str;
             }
 
             /* Clickしたときの処理 */
@@ -244,6 +223,30 @@
                 }
             }
 
+            function myWebSocket() {
+                if (window["WebSocket"]) {
+                    conn = new WebSocket("ws://" + document.location.host + "/ws");
+                    conn.onopen = function (evt) {
+                        showLog("Connection established.");
+                    }
+                    conn.onclose = function (evt) {
+                        showLog("Connection closed.");
+                    };
+                    conn.onmessage = function (evt) {
+                        var messages = evt.data.split('\n');
+                        for (var i = 0; i < messages.length; i++) {
+                            var item = document.createElement("div");
+                            item.innerText = messages[i];
+                            appendLog(item);
+                        }
+                    };
+                } else {
+                    var item = document.createElement("div");
+                    item.innerHTML = "Your browser does not support WebSockets.";
+                    appendLog(item);
+                }
+            }
+
             function wsPut() {
                 // 列に投入できるか確認する
                 // 列に投入できる石の数が決まっている
@@ -271,9 +274,9 @@
 
         </script>
     </head>
-    <body>
+    <body onload="init()">
         <h2 id="message"></h2>
-        <div id="log"></div>
         <table id="board"></table>
+        <div id="log"></div>
     </body>
 </html>
