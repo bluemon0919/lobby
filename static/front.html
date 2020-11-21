@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Connect4</title>
+        <meta charset="UTF-8">
+        <script>
+            function init() {
+                messageDraw();
+                if (window["WebSocket"]) {
+                    conn = new WebSocket("ws://" + document.location.host + "/ws");
+                    conn.onmessage = function (evt) {
+                        location.reload(true);
+                    };
+                    conn.onclose = function (evt) {
+                        location.reload(true);
+                    };
+                }
+            }
+
+            // 待機中メッセージの処理
+            var drawPattern = true;
+            function messageDraw() {
+                if (drawPattern) {
+                    document.getElementById("message").textContent = "接続中です. ʕ◔ϖ◔ ʔ";
+                } else {
+                    document.getElementById("message").textContent = "接続中です. ʕ ◔ϖ◔ʔ";
+                }
+                drawPattern = !drawPattern;
+                setTimeout(messageDraw, 500);
+            }
+        </script>
+    </head>
+    <body onload="init()">
+        <h2 id="message"></h2>
+    </body>
+</html>

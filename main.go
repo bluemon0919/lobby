@@ -6,13 +6,18 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"net/http"
 )
 
 var addr = flag.String("addr", ":8080", "http service address")
 
-func serveHome(w http.ResponseWriter, r *http.Request) {
+var count = 0
+var userList []string
+var flg = false
+
+func serveFront(w http.ResponseWriter, r *http.Request) {
 	log.Println(r.URL)
 	if r.URL.Path != "/" {
 		http.Error(w, "Not found", http.StatusNotFound)
@@ -22,15 +27,55 @@ func serveHome(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	//http.ServeFile(w, r, "home.html")
+	if len(r.FormValue("id")) == 0 {
+		http.Error(w, "Not found ID", http.StatusNotFound)
+		return
+	}
+	found := false
+	for _, u := range userList {
+		if u == r.FormValue("id") {
+			found = true
+		}
+	}
+	if !found {
+		userList = append(userList, r.FormValue("id"))
+		fmt.Println("add id:", r.FormValue("id"))
+	}
+	if len(userList) >= 2 {
+		// もう一人に通知する
+		if !flg {
+			hub.broadcast <- []byte("揃った")
+			flg = true
+		}
+		http.Redirect(w, r, "/connect4", http.StatusFound)
+	} else {
+		http.ServeFile(w, r, "static/front.html")
+	}
+	//tpl := template.Must(template.ParseFiles("static/front.html"))
+	//tpl.Execute(w, nil)
+}
+
+func serveConnet4(w http.ResponseWriter, r *http.Request) {
+	log.Println(r.URL)
+	if r.URL.Path != "/connect4" {
+		http.Error(w, "Not found", http.StatusNotFound)
+		return
+	}
+	if r.Method != "GET" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
 	http.ServeFile(w, r, "static/connect4.html")
 }
 
+var hub *Hub
+
 func main() {
 	flag.Parse()
-	hub := newHub()
+	hub = newHub()
 	go hub.run()
-	http.HandleFunc("/", serveHome)
+	http.HandleFunc("/", serveFront)
+	http.HandleFunc("/connect4", serveConnet4)
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
 		serveWs(hub, w, r)
 	})
