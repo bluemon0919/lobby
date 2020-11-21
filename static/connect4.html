@@ -75,28 +75,10 @@
                 // x軸、y軸の座標を取得
                 var x = parseInt(id.charAt(5)); // 5文字目の文字コードから数値に変換
 
-                // 列に投入できるか確認する
-                // 列に投入できる石の数が決まっている
-                if (column[x] >= ROW) {
-                    console.log("ここには置けません");
-                    return;
+                // 石をおく代わりにWebSocketに送信する
+                if (WebSocket.OPEN == conn.readyState) {
+                    conn.send(x);
                 }
-                var y = (ROW - 1) - column[x]++;
-
-                // 石を投入する
-                put(y,x,color);
-
-                // 勝敗判定を行う
-                var win = judge(x,y,color);
-                if (win) {
-                    var colorMessage = "赤色"
-                    if (color == YELLOW) {
-                        colorMessage = "黄色"
-                    }
-                    showMessage("勝負あり！" + colorMessage + "の勝ちです");
-                    return;
-                }
-                update();
             }
 
             // ターンを更新する
@@ -225,6 +207,7 @@
 
             function myWebSocket() {
                 if (window["WebSocket"]) {
+                    //conn = new WebSocket("ws://localhost:8080/ws");
                     conn = new WebSocket("ws://" + document.location.host + "/ws");
                     conn.onopen = function (evt) {
                         showLog("Connection established.");
@@ -239,6 +222,7 @@
                             item.innerText = messages[i];
                             appendLog(item);
                         }
+                        wsPut(messages[0]);
                     };
                 } else {
                     var item = document.createElement("div");
@@ -247,7 +231,7 @@
                 }
             }
 
-            function wsPut() {
+            function wsPut(x) {
                 // 列に投入できるか確認する
                 // 列に投入できる石の数が決まっている
                 if (column[x] >= ROW) {
