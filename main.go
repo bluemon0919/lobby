@@ -60,7 +60,12 @@ func serveRoom(w http.ResponseWriter, r *http.Request) {
 			hub.broadcast <- []byte("揃った")
 			flg = true
 		}
-		http.Redirect(w, r, "/connect4", http.StatusFound)
+		u := userList[0]
+		u2 := userList[1]
+		if u2 == r.FormValue("id") {
+			u2 = userList[0]
+		}
+		http.Redirect(w, r, "/connect4?u1="+r.FormValue("id")+"&u2="+u2+"&u="+u, http.StatusFound)
 	} else {
 		http.ServeFile(w, r, "static/room.html")
 	}

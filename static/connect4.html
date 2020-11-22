@@ -28,19 +28,38 @@
         <script>
             "use strict";  // 厳密なエラーチェックを行うことを宣言
 
-            
             var conn;
             var RED = 1, YELLOW = 2;
             var data = [];
             var column = [];
-            var myTurn = false;
             var color = RED;
 
             const ROW = 6;
             const COLUMN = 7;
 
+            function getParam(name, url) {
+                if (!url) url = window.location.href;
+                name = name.replace(/[\[\]]/g, "\\$&");
+                var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+                    results = regex.exec(url);
+                if (!results) return null;
+                if (!results[2]) return '';
+                return decodeURIComponent(results[2].replace(/\+/g, " "));
+            }
+
+            var u1; // あなたのユーザ名
+            var u2; // 対戦相手のユーザ名
+            var u;  // 先行ユーザ名
+
             function init() {
                 myWebSocket();
+                u1 = getParam("u1");
+                u2 = getParam("u2");
+                u = getParam("u");
+                if (u!=u1) {
+                    color = YELLOW;
+                }
+
                 var b = document.getElementById("board");
                 for (var i=0;i<ROW;i++) {
                     var tr = document.createElement("tr");
@@ -70,6 +89,9 @@
 
             /* Clickしたときの処理 */
             function clicked(e) {
+                if (u != u1) {
+                    return;
+                }
                 var id = e.target.id; // セルのIDを取得
 
                 // x軸、y軸の座標を取得
@@ -85,10 +107,12 @@
             function update() {
                 if (color == RED) {
                     color = YELLOW;
-                    showMessage("黄色のターンです");
+                    showMessage(u1 + "さんのターンです。黄色の石を入れてください。");
+                    u = u1;
                 } else {
                     color = RED;
-                    showMessage("赤色のターンです");
+                    showMessage(u2 + "さんのターンです。");
+                    u = u2;
                 }
             }
 
@@ -246,9 +270,9 @@
                 // 勝敗判定を行う
                 var win = judge(x,y,color);
                 if (win) {
-                    var colorMessage = "赤色"
+                    var colorMessage = u2
                     if (color == YELLOW) {
-                        colorMessage = "黄色"
+                        colorMessage = u1
                     }
                     showMessage("勝負あり！" + colorMessage + "の勝ちです");
                     return;
