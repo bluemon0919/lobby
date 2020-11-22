@@ -255,6 +255,16 @@
                 }
             }
 
+            var fc = 5;
+            function finish() {
+                document.getElementById("message2").textContent = "ロビーに戻ります " + fc;
+                fc=fc-1;
+                if (fc<=0) {
+                    window.location = "/";
+                }
+                setTimeout(finish,1000);
+            }
+
             function wsPut(x) {
                 // 列に投入できるか確認する
                 // 列に投入できる石の数が決まっている
@@ -275,6 +285,7 @@
                         colorMessage = u1
                     }
                     showMessage("勝負あり！" + colorMessage + "の勝ちです");
+                    setTimeout(finish, 1000);
                     return;
                 }
                 update();
@@ -284,6 +295,7 @@
     </head>
     <body onload="init()">
         <h2 id="message"></h2>
+        <div id="message2"></div>
         <table id="board"></table>
         <div id="log"></div>
     </body>
