@@ -27,6 +27,19 @@ func serveFront(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+	http.ServeFile(w, r, "static/front.html")
+}
+
+func serveRoom(w http.ResponseWriter, r *http.Request) {
+	log.Println(r.URL)
+	if r.URL.Path != "/room" {
+		http.Error(w, "Not found", http.StatusNotFound)
+		return
+	}
+	if r.Method != "GET" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
 	if len(r.FormValue("id")) == 0 {
 		http.Error(w, "Not found ID", http.StatusNotFound)
 		return
@@ -49,7 +62,7 @@ func serveFront(w http.ResponseWriter, r *http.Request) {
 		}
 		http.Redirect(w, r, "/connect4", http.StatusFound)
 	} else {
-		http.ServeFile(w, r, "static/front.html")
+		http.ServeFile(w, r, "static/room.html")
 	}
 	//tpl := template.Must(template.ParseFiles("static/front.html"))
 	//tpl.Execute(w, nil)
@@ -75,6 +88,7 @@ func main() {
 	hub = newHub()
 	go hub.run()
 	http.HandleFunc("/", serveFront)
+	http.HandleFunc("/room", serveRoom)
 	http.HandleFunc("/connect4", serveConnet4)
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
 		serveWs(hub, w, r)

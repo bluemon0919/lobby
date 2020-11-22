@@ -5,32 +5,25 @@
         <meta charset="UTF-8">
         <script>
             function init() {
-                messageDraw();
-                if (window["WebSocket"]) {
-                    conn = new WebSocket("ws://" + document.location.host + "/ws");
-                    conn.onmessage = function (evt) {
-                        location.reload(true);
-                    };
-                    conn.onclose = function (evt) {
-                        location.reload(true);
-                    };
-                }
             }
 
-            // 待機中メッセージの処理
-            var drawPattern = true;
-            function messageDraw() {
-                if (drawPattern) {
-                    document.getElementById("message").textContent = "接続中です. ʕ◔ϖ◔ ʔ";
+            function enter() {
+                var input = document.getElementById("name");
+                if ("" == input.value) {
+                    message = document.getElementById("message");
+                    message.textContent = "ユーザ名が入力されていません";
                 } else {
-                    document.getElementById("message").textContent = "接続中です. ʕ ◔ϖ◔ʔ";
+                    window.location = "/room?id=" + input.value;
+                    console.log(input.value);
                 }
-                drawPattern = !drawPattern;
-                setTimeout(messageDraw, 500);
             }
         </script>
     </head>
     <body onload="init()">
-        <h2 id="message"></h2>
+        <h2 id="title">Connect4 ゲームロビー</h2>
+        <p>プレイヤー名を入力してください</p>
+        <input id="name" type="text">
+        <input type="submit" onclick="enter()" value="入室する">
+        <div id="message"></div>
     </body>
 </html>
