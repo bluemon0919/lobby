@@ -4,15 +4,41 @@
         <title>Connect4</title>
         <meta charset="UTF-8">
         <script>
+            function getParam(name, url) {
+                if (!url) url = window.location.href;
+                name = name.replace(/[\[\]]/g, "\\$&");
+                var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+                    results = regex.exec(url);
+                if (!results) return null;
+                if (!results[2]) return '';
+                return decodeURIComponent(results[2].replace(/\+/g, " "));
+            }
+            function getParam2(name, str) {
+                name = name.replace(/[\[\]]/g, "\\$&");
+                var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+                    results = regex.exec(str);
+                if (!results) return null;
+                if (!results[2]) return '';
+                return decodeURIComponent(results[2].replace(/\+/g, " "));
+            }
+
+            var you = ""
             function init() {
+                you = getParam("u1");
                 messageDraw();
                 if (window["WebSocket"]) {
                     conn = new WebSocket("ws://" + document.location.host + "/ws");
                     conn.onmessage = function (evt) {
-                        location.reload(true);
+                        var messages = evt.data.split('\n');
+                        u2 = getParam2("u1", messages[0])
+                        if (you == u2) {
+                            u2 = getParam2("u2", messages[0])
+                        }
+                        u = getParam2("u", messages[0])
+                        location.replace("/connect4?u1="+you+"&u2="+u2+"&u="+u)
                     };
                     conn.onclose = function (evt) {
-                        location.reload(true);
+                        location.replace("/room");
                     };
                 }
             }
