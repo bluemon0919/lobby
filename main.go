@@ -61,7 +61,7 @@ func serveFront(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.ServeFile(w, r, "front.html")
+	http.ServeFile(w, r, "static/front.html")
 }
 
 func serveRoom(w http.ResponseWriter, r *http.Request) {
@@ -249,13 +249,12 @@ func serveConnet4(w http.ResponseWriter, r *http.Request) {
 var hub *Hub
 
 func main() {
-	flag.Parse()
 	hub = newHub()
 	go hub.run()
 	room := newRoom()
 	http.HandleFunc("/", serveFront)
 	http.HandleFunc("/room", serveRoom)
-	http.HandleFunc("/connect4", serveConnet4)
+	http.HandleFunc("/play", serveConnet4)
 	http.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
 		serveLoginHandler(room, w, r)
 	})

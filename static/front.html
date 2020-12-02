@@ -8,23 +8,26 @@
                 document.cookie = "default-cookiename=hello";
             }
 
-            function enter() {
+            function enter(e) {
                 var input = document.getElementById("name");
                 if ("" == input.value) {
                     message = document.getElementById("message");
                     message.textContent = "ユーザ名が入力されていません";
                 } else {
-                    window.location = "/login";
-                    console.log(input.value);
+                    var f = document.getElementById("enter");
+                    //f.method = 'POST'; // method(GET or POST)を設定する
+                    //f.action = '/login'; // action(遷移先URL)を設定する
                 }
             }
         </script>
     </head>
     <body onload="init()">
         <h2 id="title">Connect4 ゲームロビー</h2>
-        <p>プレイヤー名を入力してください</p>
-        <input id="name" type="text">
-        <input type="submit" onclick="enter()" value="入室する">
+        <form id="enter" action="/login" method="POST">
+            <p>プレイヤー名を入力してください</p>
+            <input name="account" type="text"/>
+            <input type="submit" onclick="enter()" value="入室する"/>
+        </form>
         <div id="message"></div>
     </body>
 </html>
