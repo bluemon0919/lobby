@@ -35,20 +35,6 @@ type Room struct {
 	count int
 }
 
-type RoomManager struct {
-	rooms []OneRoom
-}
-
-// OneRoom は各ゲームルームの情報です
-type OneRoom struct {
-	// ルームナンバー
-	id string
-	// 入室中のユーザーリスト
-	users []User
-	// 通信ハブ
-	hub *websocket.Hub
-}
-
 func newRoom() *Room {
 	return &Room{}
 }
@@ -132,20 +118,6 @@ func serveLoginHandler(room *Room, w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/lobby", http.StatusMovedPermanently)
 }
 
-func serverRoomTop(w http.ResponseWriter, r *http.Request) {
-	// セッションを取得
-	manager := sessions.NewManager()
-	session, err := manager.Get(r, cookieName)
-	if err != nil {
-		http.Error(w, "session get faild", http.StatusMethodNotAllowed)
-		return
-	}
-
-	if _, ok := session.Values["account"]; ok {
-		fmt.Println("登録済み")
-	}
-}
-
 func (r *Room) id() string {
 	guid := xid.New()
 	return guid.String()
@@ -153,17 +125,6 @@ func (r *Room) id() string {
 
 func (r *Room) roomNumber() int {
 	return 1 // 固定
-}
-
-// Number returns the number of people in the room
-func (r *Room) Number(roomNum int) (int, error) {
-	num := 0
-	for _, u := range r.users {
-		if roomNum == u.roomNumber {
-			num++
-		}
-	}
-	return num, nil
 }
 
 func (r *Room) Register(name string) (string, error) {
