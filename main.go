@@ -10,7 +10,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/bluemon0919/websocket/connect4/sessions"
+	"github.com/bluemon0919/lobby/sessions"
 	"github.com/rs/xid"
 )
 
@@ -64,9 +64,9 @@ func serveFront(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "static/front.html")
 }
 
-func serveRoom(w http.ResponseWriter, r *http.Request) {
+func serveLobby(w http.ResponseWriter, r *http.Request) {
 	log.Println(r.URL)
-	if r.URL.Path != "/room" {
+	if r.URL.Path != "/lobby" {
 		http.Error(w, "Not found", http.StatusNotFound)
 		return
 	}
@@ -96,9 +96,7 @@ func serveLoginHandler(room *Room, w http.ResponseWriter, r *http.Request) {
 	}
 
 	// セッションを開始
-	//router := gin.Default()
 	manager := sessions.NewManager()
-	//router.Use(sessions.StartDefaultSession(manager))
 	session, err := manager.Get(r, sessions.DefaultCookieName)
 	if err != nil {
 		session, err = manager.New(w, r, sessions.DefaultCookieName)
@@ -119,7 +117,6 @@ func serveLoginHandler(room *Room, w http.ResponseWriter, r *http.Request) {
 	hub, _ := hubmaneger.Get(session.ID)
 
 	// 待機用のページを返す
-	//http.ServeFile(w, r, "static/room.html?u1="+r.FormValue("account"))
 	if hubmaneger.Count(hub) >= 2 {
 		us := hubmaneger.Users(hub)
 		fmt.Println("us:", us)
@@ -127,48 +124,9 @@ func serveLoginHandler(room *Room, w http.ResponseWriter, r *http.Request) {
 		u2 := us[1]
 		hub.broadcast <- []byte("&u1=" + u1 + "&u2=" + u2 + "&u=" + u)
 		fmt.Println("casted")
-		http.Redirect(w, r, "/connect4?u1="+u2+"&u2="+u1+"&u="+u, http.StatusFound)
+		http.Redirect(w, r, "/play?u1="+u2+"&u2="+u1+"&u="+u, http.StatusFound)
 	}
-	http.Redirect(w, r, "/room", http.StatusMovedPermanently)
-
-	/*
-		// メンバーが揃ったら別スレッドからWebSocket通信で通知する
-		roomNumber := 1
-		n, err := room.Number(roomNumber)
-		if err != nil {
-			http.Error(w, "room number not found", http.StatusNotFound)
-			return
-		}
-		if n >= 2 {
-			u := room.users[0].name
-			u1 := room.users[0].name
-			u2 := room.users[1].name
-			go func() {
-				time.Sleep(time.Second * 2)
-				hub.broadcast <- []byte("u1=" + u1 + "&u2=" + u2 + "&u=" + u)
-			}()
-		}
-	*/
-
-	/*
-		if len(room.userList) >= 2 {
-			// もう一人に通知する
-			if !flg {
-				hub.broadcast <- []byte("揃った")
-				flg = true
-			}
-			u := room.userList[0]
-			u2 := room.userList[1]
-			if u2 == r.FormValue("id") {
-				u2 = room.userList[0]
-			}
-			http.Redirect(w, r, "/connect4?u1="+r.FormValue("id")+"&u2="+u2+"&u="+u, http.StatusFound)
-		} else {
-			http.ServeFile(w, r, "static/room.html")
-		}
-		//tpl := template.Must(template.ParseFiles("static/front.html"))
-		//tpl.Execute(w, nil)
-	*/
+	http.Redirect(w, r, "/lobby", http.StatusMovedPermanently)
 }
 
 func serverRoomTop(w http.ResponseWriter, r *http.Request) {
@@ -233,9 +191,9 @@ func serveWebsocket(w http.ResponseWriter, r *http.Request) {
 	serveWs(hub, w, r)
 }
 
-func serveConnet4(w http.ResponseWriter, r *http.Request) {
+func servePlay(w http.ResponseWriter, r *http.Request) {
 	log.Println(r.URL)
-	if r.URL.Path != "/connect4" {
+	if r.URL.Path != "/play" {
 		http.Error(w, "Not found", http.StatusNotFound)
 		return
 	}
@@ -246,21 +204,15 @@ func serveConnet4(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "static/connect4.html")
 }
 
-var hub *Hub
-
 func main() {
-	hub = newHub()
-	go hub.run()
 	room := newRoom()
 	http.HandleFunc("/", serveFront)
-	http.HandleFunc("/room", serveRoom)
-	http.HandleFunc("/play", serveConnet4)
+	http.HandleFunc("/lobby", serveLobby)
+	http.HandleFunc("/play", servePlay)
 	http.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
 		serveLoginHandler(room, w, r)
 	})
-	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
-		serveWebsocket(w, r)
-	})
+	http.HandleFunc("/ws", serveWebsocket)
 	err := http.ListenAndServe(*addr, nil)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
