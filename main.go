@@ -115,34 +115,21 @@ func serveLoginHandler(room *Room, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	/*
-		hubmaneger := NewManager()
-		hub := hubmaneger.Get(session.ID)
-		hubmaneger.Save(session.ID, hub)
-	*/
-	/*
-		var err error
-		if name := r.FormValue("account"); 0 != len(name) {
-			/// UserNameをサーバーに登録
-			/// UesrName,id,RoomNumberをセットで管理する
-			_, err = room.Register(name)
-			if err != nil {
-				http.Error(w, "Not found ID", http.StatusNotFound)
-				return
-			}
-		} else {
-			http.Error(w, "Not found ID", http.StatusNotFound)
-			return
-		}
-	*/
+	hubmaneger := NewManager()
+	hub, _ := hubmaneger.Get(session.ID)
 
 	// 待機用のページを返す
 	//http.ServeFile(w, r, "static/room.html?u1="+r.FormValue("account"))
-	if len(hub.clients) >= 2 {
-		http.Redirect(w, r, "/connect4", http.StatusMovedPermanently)
-	} else {
-		http.Redirect(w, r, "/room", http.StatusMovedPermanently)
+	if hubmaneger.Count(hub) >= 2 {
+		us := hubmaneger.Users(hub)
+		fmt.Println("us:", us)
+		u1, u := us[0], us[0]
+		u2 := us[1]
+		hub.broadcast <- []byte("&u1=" + u1 + "&u2=" + u2 + "&u=" + u)
+		fmt.Println("casted")
+		http.Redirect(w, r, "/connect4?u1="+u2+"&u2="+u1+"&u="+u, http.StatusFound)
 	}
+	http.Redirect(w, r, "/room", http.StatusMovedPermanently)
 
 	/*
 		// メンバーが揃ったら別スレッドからWebSocket通信で通知する
@@ -235,6 +222,17 @@ func (r *Room) Register(name string) (string, error) {
 	return id, nil
 }
 
+func serveWebsocket(w http.ResponseWriter, r *http.Request) {
+	manager := sessions.NewManager()
+	session, err := manager.Get(r, sessions.DefaultCookieName)
+	if err != nil {
+		return
+	}
+	hubManger := NewManager()
+	hub, _ := hubManger.Get(session.ID)
+	serveWs(hub, w, r)
+}
+
 func serveConnet4(w http.ResponseWriter, r *http.Request) {
 	log.Println(r.URL)
 	if r.URL.Path != "/connect4" {
@@ -262,7 +260,7 @@ func main() {
 		serveLoginHandler(room, w, r)
 	})
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
-		serveWs(hub, w, r)
+		serveWebsocket(w, r)
 	})
 	err := http.ListenAndServe(*addr, nil)
 	if err != nil {
