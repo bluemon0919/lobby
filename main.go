@@ -100,9 +100,9 @@ func serveLoginHandler(room *Room, w http.ResponseWriter, r *http.Request) {
 
 	// セッションを開始
 	manager := sessions.NewManager()
-	session, err := manager.Get(r, sessions.DefaultCookieName)
+	session, err := manager.Get(r, cookieName)
 	if err != nil {
-		session, err = manager.New(w, r, sessions.DefaultCookieName)
+		session, err = manager.New(w, r, cookieName)
 		if err != nil {
 			fmt.Println(err)
 			http.Error(w, "session get faild", http.StatusMethodNotAllowed)
@@ -135,7 +135,7 @@ func serveLoginHandler(room *Room, w http.ResponseWriter, r *http.Request) {
 func serverRoomTop(w http.ResponseWriter, r *http.Request) {
 	// セッションを取得
 	manager := sessions.NewManager()
-	session, err := manager.Get(r, sessions.DefaultCookieName)
+	session, err := manager.Get(r, cookieName)
 	if err != nil {
 		http.Error(w, "session get faild", http.StatusMethodNotAllowed)
 		return
@@ -185,7 +185,7 @@ func (r *Room) Register(name string) (string, error) {
 
 func serveWebsocket(w http.ResponseWriter, r *http.Request) {
 	manager := sessions.NewManager()
-	session, err := manager.Get(r, sessions.DefaultCookieName)
+	session, err := manager.Get(r, cookieName)
 	if err != nil {
 		return
 	}
