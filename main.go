@@ -11,8 +11,11 @@ import (
 	"net/http"
 
 	"github.com/bluemon0919/lobby/sessions"
+	"github.com/bluemon0919/lobby/websocket"
 	"github.com/rs/xid"
 )
+
+const cookieName = "gameid"
 
 var addr = flag.String("addr", ":8080", "http service address")
 
@@ -43,7 +46,7 @@ type OneRoom struct {
 	// 入室中のユーザーリスト
 	users []User
 	// 通信ハブ
-	hub *Hub
+	hub *websocket.Hub
 }
 
 func newRoom() *Room {
@@ -113,7 +116,7 @@ func serveLoginHandler(room *Room, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hubmaneger := NewManager()
+	hubmaneger := websocket.NewManager()
 	hub, _ := hubmaneger.Get(session.ID)
 
 	// 待機用のページを返す
@@ -122,7 +125,7 @@ func serveLoginHandler(room *Room, w http.ResponseWriter, r *http.Request) {
 		fmt.Println("us:", us)
 		u1, u := us[0], us[0]
 		u2 := us[1]
-		hub.broadcast <- []byte("&u1=" + u1 + "&u2=" + u2 + "&u=" + u)
+		hub.Boardcast([]byte("&u1=" + u1 + "&u2=" + u2 + "&u=" + u))
 		fmt.Println("casted")
 		http.Redirect(w, r, "/play?u1="+u2+"&u2="+u1+"&u="+u, http.StatusFound)
 	}
@@ -186,9 +189,9 @@ func serveWebsocket(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
-	hubManger := NewManager()
+	hubManger := websocket.NewManager()
 	hub, _ := hubManger.Get(session.ID)
-	serveWs(hub, w, r)
+	websocket.ServeWs(hub, w, r)
 }
 
 func servePlay(w http.ResponseWriter, r *http.Request) {
@@ -205,6 +208,7 @@ func servePlay(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	flag.Parse()
 	room := newRoom()
 	http.HandleFunc("/", serveFront)
 	http.HandleFunc("/lobby", serveLobby)
