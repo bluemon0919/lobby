@@ -2,6 +2,7 @@ package websocket
 
 import "fmt"
 
+// Manager manages websocket hubs
 type Manager struct {
 	database map[string]*Hub
 	pool     []*Hub
@@ -25,10 +26,12 @@ func init() {
 	}
 }
 
+// NewManager websocket hub managerを取得する
 func NewManager() *Manager {
 	return &m
 }
 
+// Get websocket hubを取得する
 func (m *Manager) Get(key string) (*Hub, error) {
 	if hub, ok := m.database[key]; ok {
 		return hub, nil
@@ -47,14 +50,17 @@ func (m *Manager) Get(key string) (*Hub, error) {
 	return hub, nil
 }
 
+// Count hubの割当人数を取得する
 func (m *Manager) Count(hub *Hub) int {
 	return m.count[hub]
 }
 
+// Users ユーザ名を取得する
 func (m *Manager) Users(hub *Hub) []string {
 	return m.users[hub]
 }
 
+// Destroy キーを削除する
 func (m *Manager) Destroy(key string) {
 	delete(m.database, key)
 }
