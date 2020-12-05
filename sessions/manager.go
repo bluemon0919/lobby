@@ -18,22 +18,24 @@ func init() {
 	m.database = map[string]interface{}{}
 }
 
+// NewManager session managerを取得する
 func NewManager() *Manager {
 	return &m
 }
 
-// 新しいセッションIDを発行する
+// sessionID 新しいセッションIDを発行する
 func (m *Manager) sessionID() string {
 	guid := xid.New()
 	return guid.String()
 }
 
-// セッションIDが存在するか確認する
+// Exists セッションIDが存在するか確認する
 func (m *Manager) Exists(sessionID string) bool {
 	_, ok := m.database[sessionID]
 	return ok
 }
 
+// Start セッションを開始する
 func (m *Manager) Start(w http.ResponseWriter, r *http.Request, cookieName string) (*Session, error) {
 	session, err := m.Get(r, cookieName)
 	if err != nil {
@@ -46,7 +48,8 @@ func (m *Manager) Start(w http.ResponseWriter, r *http.Request, cookieName strin
 	return session, nil
 }
 
-func (m *Manager) Save(r *http.Request, w http.ResponseWriter, session *Session) error {
+// Save セッションを保存する
+func (m *Manager) Save(session *Session) error {
 	m.database[session.ID] = session
 
 	c := &http.Cookie{
@@ -54,12 +57,11 @@ func (m *Manager) Save(r *http.Request, w http.ResponseWriter, session *Session)
 		Value: session.ID,
 		Path:  "/",
 	}
-	http.SetCookie(w, c)
-	//ttp.SetCookie(session.writer, c)
+	http.SetCookie(session.writer, c)
 	return nil
 }
 
-//func (m *Manager) New(r *http.Request, cookieName string) (*Session, error) {
+// New 新しいSessionManagerを生成する
 func (m *Manager) New(w http.ResponseWriter, r *http.Request, cookieName string) (*Session, error) {
 	cookie, err := r.Cookie(cookieName)
 	if err == nil && m.Exists(cookie.Value) {
@@ -72,7 +74,7 @@ func (m *Manager) New(w http.ResponseWriter, r *http.Request, cookieName string)
 	return session, nil
 }
 
-// セッションを取得する
+// Get セッションを取得する
 func (m *Manager) Get(r *http.Request, cookieName string) (*Session, error) {
 	cookie, err := r.Cookie(cookieName)
 	if err != nil {
@@ -88,11 +90,11 @@ func (m *Manager) Get(r *http.Request, cookieName string) (*Session, error) {
 	}
 
 	session := buffer.(*Session)
-	session.request = r // ここでフロントの情報をサーバーに格納しているっぽい⭐️
+	//session.request = r // ここでフロントの情報をサーバーに格納しているっぽい⭐️
 	return session, nil
 }
 
-// セッションを破棄する
+// Destroy セッションを破棄する
 func (m *Manager) Destroy(sessionID string) {
 	delete(m.database, sessionID)
 }
