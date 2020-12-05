@@ -11,32 +11,11 @@ import (
 
 	"github.com/bluemon0919/lobby/sessions"
 	"github.com/bluemon0919/lobby/websocket"
-	"github.com/rs/xid"
 )
 
 const cookieName = "gameid"
 
 var addr = flag.String("addr", ":8080", "http service address")
-
-var count = 0
-var userList []string
-var flg = false
-
-type User struct {
-	name       string
-	id         string
-	roomNumber int
-}
-
-// Room manages game room user information.
-type Room struct {
-	users []User
-	count int
-}
-
-func newRoom() *Room {
-	return &Room{}
-}
 
 func serveFront(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
@@ -54,7 +33,7 @@ func serveLobby(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "static/room.html")
 }
 
-func serveLoginHandler(room *Room, w http.ResponseWriter, r *http.Request) {
+func serveLoginHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -93,11 +72,6 @@ func serveLoginHandler(room *Room, w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/lobby", http.StatusMovedPermanently)
 }
 
-func (r *Room) id() string {
-	guid := xid.New()
-	return guid.String()
-}
-
 func serveWebsocket(w http.ResponseWriter, r *http.Request) {
 	manager := sessions.NewManager()
 	session, err := manager.Get(r, cookieName)
@@ -119,13 +93,10 @@ func servePlay(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	flag.Parse()
-	room := newRoom()
 	http.HandleFunc("/", serveFront)
 	http.HandleFunc("/lobby", serveLobby)
 	http.HandleFunc("/play", servePlay)
-	http.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
-		serveLoginHandler(room, w, r)
-	})
+	http.HandleFunc("/login", serveLoginHandler)
 	http.HandleFunc("/ws", serveWebsocket)
 	err := http.ListenAndServe(*addr, nil)
 	if err != nil {
