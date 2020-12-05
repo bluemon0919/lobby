@@ -9,6 +9,7 @@ type Manager struct {
 	users    map[*Hub][]string
 }
 
+// PoolMax プールに生成するHubの数
 const PoolMax = 2
 
 var m Manager
@@ -28,8 +29,8 @@ func NewManager() *Manager {
 	return &m
 }
 
-func (m *Manager) Get(sessionID string) (*Hub, error) {
-	if hub, ok := m.database[sessionID]; ok {
+func (m *Manager) Get(key string) (*Hub, error) {
+	if hub, ok := m.database[key]; ok {
 		return hub, nil
 	}
 	if len(m.pool) <= 0 {
@@ -37,12 +38,12 @@ func (m *Manager) Get(sessionID string) (*Hub, error) {
 	}
 
 	hub := m.pool[0] // 先頭のHubを返す
-	m.database[sessionID] = hub
+	m.database[key] = hub
 	m.count[hub]++
 	if m.count[hub] >= 2 {
 		m.pool = m.pool[1:] // 先頭のHubを除外する
 	}
-	m.users[hub] = append(m.users[hub], sessionID)
+	m.users[hub] = append(m.users[hub], key)
 	return hub, nil
 }
 
@@ -54,12 +55,6 @@ func (m *Manager) Users(hub *Hub) []string {
 	return m.users[hub]
 }
 
-/*
-func (m *Manager) Save(sessionID string, hub *Hub) {
-	m.database[sessionID] = hub
-}
-*/
-
-func (m *Manager) Destroy(sessionID string) {
-	delete(m.database, sessionID)
+func (m *Manager) Destroy(key string) {
+	delete(m.database, key)
 }
