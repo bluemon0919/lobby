@@ -1,7 +1,3 @@
-// Copyright 2013 The Gorilla WebSocket Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
-
 package main
 
 import (
@@ -56,20 +52,20 @@ func serveLoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// ここから先を別のハンドラにする
-	// セッションはつないでいるので、session.Get(sessionID)でデータは取れるはず
 	hubmaneger := websocket.NewManager()
 	hub, _ := hubmaneger.Get(session.ID)
 
-	// 待機用のページを返す
 	if hubmaneger.Count(hub) >= 2 {
 		us := hubmaneger.Users(hub)
 		u1, u := us[0], us[0]
 		u2 := us[1]
 		hub.Boardcast([]byte("&u1=" + u1 + "&u2=" + u2 + "&u=" + u))
+		// PlayRoomを返す
 		http.Redirect(w, r, "/play?u1="+u2+"&u2="+u1+"&u="+u, http.StatusFound)
+	} else {
+		// LobbyRoomを返す
+		http.Redirect(w, r, "/lobby", http.StatusMovedPermanently)
 	}
-	http.Redirect(w, r, "/lobby", http.StatusMovedPermanently)
 }
 
 func serveWebsocket(w http.ResponseWriter, r *http.Request) {
