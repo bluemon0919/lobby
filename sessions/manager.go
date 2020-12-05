@@ -2,7 +2,6 @@ package sessions
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 
 	"github.com/rs/xid"
@@ -35,17 +34,26 @@ func (m *Manager) Exists(sessionID string) bool {
 	return ok
 }
 
+func (m *Manager) Start(w http.ResponseWriter, r *http.Request, cookieName string) (*Session, error) {
+	session, err := m.Get(r, cookieName)
+	if err != nil {
+		session, err = m.New(w, r, cookieName)
+		if err != nil {
+			http.Error(w, "session get faild", http.StatusMethodNotAllowed)
+			return nil, err
+		}
+	}
+	return session, nil
+}
+
 func (m *Manager) Save(r *http.Request, w http.ResponseWriter, session *Session) error {
 	m.database[session.ID] = session
 
 	c := &http.Cookie{
-		Name:  session.Name(),
+		Name:  session.CookieName(),
 		Value: session.ID,
 		Path:  "/",
 	}
-
-	fmt.Println("Save c", c)
-
 	http.SetCookie(w, c)
 	//ttp.SetCookie(session.writer, c)
 	return nil
@@ -57,13 +65,10 @@ func (m *Manager) New(w http.ResponseWriter, r *http.Request, cookieName string)
 	if err == nil && m.Exists(cookie.Value) {
 		return nil, errors.New("sessionIDはすでに発行されています")
 	}
-
 	session := NewSession(m, cookieName)
 	session.ID = m.sessionID()
 	session.request = r
-
 	session.writer = w
-
 	return session, nil
 }
 
