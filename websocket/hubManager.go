@@ -1,6 +1,9 @@
 package websocket
 
-import "fmt"
+import (
+	"fmt"
+	"net/http"
+)
 
 // Manager manages websocket hubs
 type Manager struct {
@@ -63,4 +66,14 @@ func (m *Manager) Users(hub *Hub) []string {
 // Destroy キーを削除する
 func (m *Manager) Destroy(key string) {
 	delete(m.database, key)
+}
+
+// Boardcast wrap boradcast
+func (h *Hub) Boardcast(bytes []byte) {
+	h.broadcast <- bytes
+}
+
+// ServeWs wrap serveWs
+func ServeWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
+	serveWs(hub, w, r)
 }

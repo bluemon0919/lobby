@@ -51,7 +51,3 @@ func (h *Hub) run() {
 		}
 	}
 }
-
-func (h *Hub) Boardcast(bytes []byte) {
-	h.broadcast <- bytes
-}
