@@ -280,9 +280,9 @@
                 // 勝敗判定を行う
                 var win = judge(x,y,color);
                 if (win) {
-                    var colorMessage = u2
+                    var colorMessage = "相手"
                     if (color == YELLOW) {
-                        colorMessage = u1
+                        colorMessage = "あなた"
                     }
                     showMessage("勝負あり！" + colorMessage + "の勝ちです");
                     setTimeout(finish, 1000);
