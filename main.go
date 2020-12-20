@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"net/http"
 
@@ -53,7 +54,12 @@ func serveLoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	hubmaneger := websocket.NewManager()
-	hub, _ := hubmaneger.Get(session.ID)
+	hub, err := hubmaneger.Get(session.ID)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "websocket hub get faild", http.StatusMethodNotAllowed)
+		return
+	}
 
 	if hubmaneger.Count(hub) >= 2 {
 		us := hubmaneger.Users(hub)
@@ -87,6 +93,22 @@ func servePlay(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "static/connect4.html")
 }
 
+func huboutHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	manager := sessions.NewManager()
+	session, err := manager.Get(r, cookieName)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	hubManger := websocket.NewManager()
+	hubManger.Destroy(session.ID)
+}
+
 func main() {
 	flag.Parse()
 	http.HandleFunc("/", serveFront)
@@ -94,6 +116,7 @@ func main() {
 	http.HandleFunc("/play", servePlay)
 	http.HandleFunc("/login", serveLoginHandler)
 	http.HandleFunc("/ws", serveWebsocket)
+	http.HandleFunc("/hubout", huboutHandler)
 	err := http.ListenAndServe(*addr, nil)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)

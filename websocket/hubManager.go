@@ -43,10 +43,10 @@ func (m *Manager) Get(key string) (*Hub, error) {
 		return nil, fmt.Errorf("no hub")
 	}
 
-	hub := m.pool[0] // 先頭のHubを返す
+	hub := m.pool[0] // 先頭のHubを割り当てる
 	m.database[key] = hub
 	m.count[hub]++
-	if m.count[hub] >= 2 {
+	if m.count[hub] >= PoolMax {
 		m.pool = m.pool[1:] // 先頭のHubを除外する
 	}
 	m.users[hub] = append(m.users[hub], key)
@@ -65,7 +65,28 @@ func (m *Manager) Users(hub *Hub) []string {
 
 // Destroy キーを削除する
 func (m *Manager) Destroy(key string) {
-	delete(m.database, key)
+	if hub, exist := m.database[key]; exist {
+		delete(m.database, key)
+		users := m.Users(hub)
+		fmt.Println(users)
+		for u := 0; u < len(users); u++ {
+			if users[u] == key {
+				m.users[hub] = remove(m.users[hub], u)
+				users = m.users[hub]
+			}
+		}
+		if 0 == len(users) {
+			// ペアが解放されたらhubをpoolに戻す
+			delete(m.count, hub)
+			m.pool = append(m.pool, hub)
+		} else {
+			// ペアが解放されるのを待つ
+		}
+	}
+}
+
+func remove(slice []string, s int) []string {
+	return append(slice[:s], slice[s+1:]...)
 }
 
 // Boardcast wrap boradcast
