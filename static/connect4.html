@@ -284,11 +284,12 @@
                     const xhr = new XMLHttpRequest();
                     xhr.open('POST', "/hubout", true);
                     xhr.onload = function() {
-                        window.location = "";
+                        window.location = "/";
                     }
                     xhr.send();
+                }else{
+                    setTimeout(finish,1000);
                 }
-                setTimeout(finish,1000);
             }
 
             function wsPut(x) {
