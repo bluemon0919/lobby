@@ -37,6 +37,9 @@
             const ROW = 6;
             const COLUMN = 7;
 
+            const ResultLose = 0;
+            const ResultWin = 1;
+
             function getParam(name, url) {
                 if (!url) url = window.location.href;
                 name = name.replace(/[\[\]]/g, "\\$&");
@@ -281,15 +284,34 @@
                 document.getElementById("message2").textContent = "ロビーに戻ります " + fc;
                 fc=fc-1;
                 if (fc<=0) {
-                    const xhr = new XMLHttpRequest();
-                    xhr.open('POST', "/hubout", true);
-                    xhr.onload = function() {
-                        window.location = "/";
-                    }
-                    xhr.send();
+                    logout();
                 }else{
                     setTimeout(finish,1000);
                 }
+            }
+
+            // 結果を送信する
+            function sendResult(result) {
+                console.log("sendResult", result)
+                const p = new Promise((resolve, reject) => {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('POST', "/players/" + u1_name + "/" + result, true);
+                    xhr.onload = function() {
+                        resolve();
+                    }
+                    xhr.send();
+                });
+                return p;
+            }
+
+            // WebSocketのHubからログアウトする
+            function logout() {
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', "/hubout", true);
+                xhr.onload = function() {
+                    window.location = "/"; // topページに戻る
+                }
+                xhr.send();
             }
 
             function wsPut(x) {
@@ -312,7 +334,11 @@
                         colorMessage = "あなた"
                     }
                     showMessage("勝負あり！" + colorMessage + "の勝ちです");
-                    setTimeout(finish, 1000);
+                    let result = ResultLose;
+                    if (color == YELLOW) {
+                        result = ResultWin;
+                    }
+                    sendResult(result).then(() => setTimeout(finish, 1000));
                     return;
                 }
                 update();
