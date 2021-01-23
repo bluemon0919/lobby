@@ -41,6 +41,8 @@ func (w *WebAPI) PlayersGET(c *gin.Context) {
 }
 
 // ResultNotify notices game result
+// PlayerName(string)とResult(string)を受け取ってSQLに書き込む
+// Resuleは"1"なら勝ち、"0"なら負けを表す
 func (w *WebAPI) ResultNotify(c *gin.Context) {
 	playerName := c.Param("PlayerName")
 	result := c.Param("Result")
@@ -82,4 +84,28 @@ func (w *WebAPI) ResultNotify(c *gin.Context) {
 		return
 	}
 	c.String(http.StatusOK, "result set")
+}
+
+// GetHistory get player's games history.
+// PlayerIDを基にプレイヤーのゲーム履歴を取得する
+func (w *WebAPI) GetHistory(c *gin.Context) {
+	playerID := c.Param("SessionID")
+	player := sessions.GetPlayer(playerID)
+	fmt.Println("id:", playerID, "name:", player)
+
+	_, item, err := w.sql.Get(player.Name)
+	if err != nil {
+		c.String(http.StatusInternalServerError, "database get error")
+		return
+	}
+	tmpNumOfGames := item.NumOfGames
+	tmpNumOfWins := item.NumOfWins
+
+	// key,value形式のJsonデータを作る
+	datas := make(map[string]interface{})
+	datas["player"] = player.Name
+	datas["games"] = tmpNumOfGames
+	datas["wins"] = tmpNumOfWins
+
+	c.JSON(http.StatusOK, datas)
 }
