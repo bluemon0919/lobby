@@ -22,38 +22,104 @@
                 return decodeURIComponent(results[2].replace(/\+/g, " "));
             }
 
-            function init() {
-                messageDraw();
-                if (window["WebSocket"]) {
-                    conn = new WebSocket("ws://" + document.location.host + "/ws");
-                    conn.onmessage = function (evt) {
-                        var messages = evt.data.split('\n');
-                        console.log("messages=", messages)
-                        var u1 = getParam2("u1", messages[0])
-                        var u2 = getParam2("u2", messages[0])
-                        var u = getParam2("u", messages[0])
-                        location.replace("/play?u1="+u1+"&u2="+u2+"&u="+u)
+            let player_name;
+            let player_games;
+            let player_wins;
+            let opps_name;
+            function getUserInformation(sessionID) {
+                const p = new Promise((resolve, reject) => {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('GET', "/player/" + sessionID, true);
+                    xhr.responseType = 'json';
+                    xhr.onload = function() {
+                        var res_data = this.response;
+                        player_name = res_data["player"];
+                        player_games = res_data["games"];
+                        player_wins = res_data["wins"];
+                        opps_name = res_data["opps"];
+
+                        console.log("自分のユーザ名", player_name);
+                        console.log("ゲーム数", player_games);
+                        console.log("勝利数", player_wins);
+                        console.log("対戦相手名", opps_name)
+                        resolve();
                     };
-                    conn.onclose = function (evt) {
-                        location.replace("/lobby");
-                    };
+                    xhr.send();
+                });
+                return p;
+            }
+
+            function getGameID() {
+                var cookies = document.cookie; //全てのcookieを取り出して
+                var cookiesArray = cookies.split(';'); // ;で分割し配列に
+
+                for(var c of cookiesArray){ //一つ一つ取り出して
+                    var cArray = c.split('='); //さらに=で分割して配列に
+                    if( cArray[0] == 'gameid' && cArray[1].length != 0 ){ // 取り出したいkeyと合致したら
+                        console.log("gameid:", cArray[1]);
+                        return cArray[1];
+                    }
                 }
+            }
+
+            function init() {
+                // 対戦履歴を取得する
+                let gameid = getGameID(); // cookieからgameid(=u1)を取得
+                getUserInformation(gameid).then(() => {
+
+                    messageDraw(player_name, player_games, 0);
+                    if (window["WebSocket"]) {
+                        conn = new WebSocket("ws://" + document.location.host + "/ws");
+                        conn.onmessage = function (evt) {
+                            var messages = evt.data.split('\n');
+                            console.log("messages=", messages)
+                            var u1 = getParam2("u1", messages[0])
+                            var u2 = getParam2("u2", messages[0])
+                            var u = getParam2("u", messages[0])
+                            location.replace("/play?u1="+u1+"&u2="+u2+"&u="+u)
+                        };
+                        conn.onclose = function (evt) {
+                            location.replace("/lobby");
+                        };
+                    }
+                });
             }
 
             // 待機中メッセージの処理
             var drawPattern = true;
             function messageDraw() {
+                document.getElementById("log_name").textContent = "Name : " + player_name
+                document.getElementById("log-games").textContent = "Games : " + player_games
+                document.getElementById("log-wins").textContent = "Wins : " + player_wins
+                var table = document.getElementById("table");
+                if (null == opps_name || opps_name.length == 0) {
+                }else{
+                    for (var i=0;i<opps_name.length;i++) {
+                        var tr = document.createElement("tr");
+                        var td = document.createElement("td");
+                        td.textContent = opps_name[i];
+                        tr.appendChild(td);
+                        table.appendChild(tr);
+                    }
+                }
+                messageChange();
+            }
+            function messageChange() {
                 if (drawPattern) {
                     document.getElementById("message").textContent = "対戦相手を待っています. ( ･ω･)";
                 } else {
                     document.getElementById("message").textContent = "対戦相手を待っています. (･ω･ )";
                 }
                 drawPattern = !drawPattern;
-                setTimeout(messageDraw, 500);
+                setTimeout(messageChange, 500);
             }
         </script>
     </head>
     <body onload="init()">
         <h2 id="message"></h2>
+        <h2 id="log_name"></h2>
+        <h3 id="log-games"></h3>
+        <h3 id="log-wins"></h3>
+        <table id="table"></table>
     </body>
 </html>

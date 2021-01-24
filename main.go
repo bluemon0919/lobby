@@ -7,12 +7,16 @@ import (
 	"net/http"
 
 	"github.com/bluemon0919/lobby/api"
+	"github.com/bluemon0919/lobby/database"
 	"github.com/bluemon0919/lobby/sessions"
 	"github.com/bluemon0919/lobby/websocket"
 	"github.com/gin-gonic/gin"
 )
 
+const dbFileName = "connect4_test.db"
 const cookieName = "gameid"
+
+var sql *database.EntitySQL
 
 var addr = flag.String("addr", ":8080", "http service address")
 
@@ -29,6 +33,18 @@ func serveLoginHandler(c *gin.Context) {
 	if "" == account {
 		http.Error(c.Writer, "account not set", http.StatusNotFound)
 		return
+	}
+
+	_, item, err := sql.Get(account)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if item.IsEmpty() {
+		sql.Add(&database.Item{
+			UserName:   account,
+			NumOfGames: 0,
+			NumOfWins:  0,
+		})
 	}
 
 	// セッションを開始
@@ -90,6 +106,8 @@ func huboutHandler(c *gin.Context) {
 }
 
 func main() {
+	sql = database.NewSQL(dbFileName)
+	api := api.NewWebAPI(sql)
 	flag.Parse()
 	router := gin.Default()
 	v1 := router.Group("")
@@ -107,6 +125,8 @@ func main() {
 		v1.POST("/login", serveLoginHandler)
 		v1.POST("/hubout", huboutHandler)
 		v1.GET("/players/:SessionID", api.PlayersGET)
+		v1.POST("/players/:PlayerName/:Result/:OppName", api.ResultNotify) // endpoint=player, PlayerName=sessionIDに変更したい
+		v1.GET("/player/:SessionID", api.GetHistory)
 	}
 	router.Run(":8080")
 
