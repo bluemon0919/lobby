@@ -295,7 +295,7 @@
                 console.log("sendResult", result)
                 const p = new Promise((resolve, reject) => {
                     const xhr = new XMLHttpRequest();
-                    xhr.open('POST', "/players/" + u1_name + "/" + result, true);
+                    xhr.open('POST', "/players/" + u1_name + "/" + result + "/" + u2_name, true);
                     xhr.onload = function() {
                         resolve();
                     }

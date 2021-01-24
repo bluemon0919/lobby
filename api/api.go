@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"sync"
 
 	"github.com/bluemon0919/lobby/database"
 	"github.com/bluemon0919/lobby/sessions"
@@ -40,10 +41,14 @@ func (w *WebAPI) PlayersGET(c *gin.Context) {
 	c.JSON(http.StatusOK, datas)
 }
 
+var mu sync.Mutex
+
 // ResultNotify notices game result
 // PlayerName(string)とResult(string)を受け取ってSQLに書き込む
 // Resuleは"1"なら勝ち、"0"なら負けを表す
 func (w *WebAPI) ResultNotify(c *gin.Context) {
+	mu.Lock()
+
 	playerName := c.Param("PlayerName")
 	result := c.Param("Result")
 
@@ -83,6 +88,44 @@ func (w *WebAPI) ResultNotify(c *gin.Context) {
 		c.String(http.StatusInternalServerError, "database update error")
 		return
 	}
+
+	// 過去５戦の対戦相手を保存する
+	oppName := c.Param("OppName")
+	oppKey, opps, err := w.sql.GetOpponent(oppName)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if oppKey != nil && opps != nil && len(opps) != 0 {
+		for i, opp := range opps {
+			// 一番古いデータは削除する
+			if opp.Num == 5 {
+				err := w.sql.DeleteOpponent(oppKey[i])
+				if err != nil {
+					c.String(http.StatusInternalServerError, "database delete error")
+					return
+				}
+			} else {
+				err := w.sql.UpdateOpponent(oppKey[i], opp.UserName, opp.OpponentName, opp.Num+1)
+				if err != nil {
+					c.String(http.StatusInternalServerError, "database update error")
+					return
+				}
+			}
+		}
+	}
+	// 最新の対戦相手を登録する
+	opp := database.Opponent{
+		UserName:     playerName,
+		OpponentName: oppName,
+		Num:          1,
+	}
+	err = w.sql.AddOpponent(&opp)
+	if err != nil {
+		c.String(http.StatusInternalServerError, "database add error")
+		return
+	}
+	fmt.Println(" OppName:", oppName)
+	mu.Unlock()
 	c.String(http.StatusOK, "result set")
 }
 
@@ -101,11 +144,19 @@ func (w *WebAPI) GetHistory(c *gin.Context) {
 	tmpNumOfGames := item.NumOfGames
 	tmpNumOfWins := item.NumOfWins
 
+	// 過去５戦の相手の名前を取得する
+	_, opps, err := w.sql.GetOpponent(player.Name)
+	var oppNames []string
+	for _, opp := range opps {
+		oppNames = append(oppNames, opp.OpponentName)
+	}
+
 	// key,value形式のJsonデータを作る
 	datas := make(map[string]interface{})
 	datas["player"] = player.Name
 	datas["games"] = tmpNumOfGames
 	datas["wins"] = tmpNumOfWins
+	datas["opps"] = oppNames
 
 	c.JSON(http.StatusOK, datas)
 }

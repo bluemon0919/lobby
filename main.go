@@ -125,7 +125,7 @@ func main() {
 		v1.POST("/login", serveLoginHandler)
 		v1.POST("/hubout", huboutHandler)
 		v1.GET("/players/:SessionID", api.PlayersGET)
-		v1.POST("/players/:PlayerName/:Result", api.ResultNotify) // endpoint=player, PlayerName=sessionIDに変更したい
+		v1.POST("/players/:PlayerName/:Result/:OppName", api.ResultNotify) // endpoint=player, PlayerName=sessionIDに変更したい
 		v1.GET("/player/:SessionID", api.GetHistory)
 	}
 	router.Run(":8080")

@@ -25,6 +25,7 @@
             let player_name;
             let player_games;
             let player_wins;
+            let opps_name;
             function getUserInformation(sessionID) {
                 const p = new Promise((resolve, reject) => {
                     const xhr = new XMLHttpRequest();
@@ -35,10 +36,12 @@
                         player_name = res_data["player"];
                         player_games = res_data["games"];
                         player_wins = res_data["wins"];
+                        opps_name = res_data["opps"];
 
                         console.log("自分のユーザ名", player_name);
                         console.log("ゲーム数", player_games);
                         console.log("勝利数", player_wins);
+                        console.log("対戦相手名", opps_name)
                         resolve();
                     };
                     xhr.send();
@@ -88,13 +91,27 @@
                 document.getElementById("log_name").textContent = "Name : " + player_name
                 document.getElementById("log-games").textContent = "Games : " + player_games
                 document.getElementById("log-wins").textContent = "Wins : " + player_wins
+                var table = document.getElementById("table");
+                if (null == opps_name || opps_name.length == 0) {
+                }else{
+                    for (var i=0;i<opps_name.length;i++) {
+                        var tr = document.createElement("tr");
+                        var td = document.createElement("td");
+                        td.textContent = opps_name[i];
+                        tr.appendChild(td);
+                        table.appendChild(tr);
+                    }
+                }
+                messageChange();
+            }
+            function messageChange() {
                 if (drawPattern) {
                     document.getElementById("message").textContent = "対戦相手を待っています. ( ･ω･)";
                 } else {
                     document.getElementById("message").textContent = "対戦相手を待っています. (･ω･ )";
                 }
                 drawPattern = !drawPattern;
-                setTimeout(messageDraw, 500);
+                setTimeout(messageChange, 500);
             }
         </script>
     </head>
@@ -103,5 +120,6 @@
         <h2 id="log_name"></h2>
         <h3 id="log-games"></h3>
         <h3 id="log-wins"></h3>
+        <table id="table"></table>
     </body>
 </html>

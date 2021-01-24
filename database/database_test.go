@@ -1,6 +1,7 @@
 package database
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"testing"
@@ -186,6 +187,166 @@ func TestSQLGet(t *testing.T) {
 		log.Fatal("NumOfGames does not match")
 	case item.NumOfWins != 5:
 		log.Fatal("NumOfWins does not match")
+	}
+
+	// ファイルを削除する
+	if _, err := os.Stat(TestEntitySQLTestFileName); !os.IsNotExist(err) {
+		if err = os.Remove(TestEntitySQLTestFileName); err != nil {
+			log.Fatal("failed to delete the file.")
+		}
+	}
+}
+
+func TestSQLAddOpponent(t *testing.T) {
+
+	// ファイルを削除する
+	if _, err := os.Stat(TestEntitySQLTestFileName); !os.IsNotExist(err) {
+		if err = os.Remove(TestEntitySQLTestFileName); err != nil {
+			log.Fatal("failed to delete the file.")
+		}
+	}
+
+	ent := NewSQL(TestEntitySQLTestFileName)
+
+	opp := Opponent{
+		UserName:     "hoge",
+		OpponentName: "fuga",
+	}
+	if err := ent.AddOpponent(&opp); err != nil {
+		log.Fatal("registration failed")
+	}
+
+	opp = Opponent{
+		OpponentName: "fuga",
+	}
+	if err := ent.AddOpponent(&opp); err == nil {
+		log.Fatal("register even if the UserName is empty")
+	}
+
+	opp = Opponent{
+		UserName: "fuga",
+	}
+	if err := ent.AddOpponent(&opp); err == nil {
+		log.Fatal("register even if the OpponentName is empty")
+	}
+
+	// ファイルを削除する
+	if _, err := os.Stat(TestEntitySQLTestFileName); !os.IsNotExist(err) {
+		if err = os.Remove(TestEntitySQLTestFileName); err != nil {
+			log.Fatal("failed to delete the file.")
+		}
+	}
+}
+
+func TestSQLDeleteOpponent(t *testing.T) {
+
+	// ファイルを削除する
+	if _, err := os.Stat(TestEntitySQLTestFileName); !os.IsNotExist(err) {
+		if err = os.Remove(TestEntitySQLTestFileName); err != nil {
+			log.Fatal("failed to delete the file.")
+		}
+	}
+
+	ent := NewSQL(TestEntitySQLTestFileName)
+
+	opp := Opponent{
+		UserName:     "hoge",
+		OpponentName: "fuga",
+	}
+
+	if err := ent.AddOpponent(&opp); err != nil {
+		log.Fatal("registration failed")
+	}
+
+	if err := ent.DeleteOpponent(1); err != nil {
+		log.Fatal("delete failed")
+	}
+
+	// ファイルを削除する
+	if _, err := os.Stat(TestEntitySQLTestFileName); !os.IsNotExist(err) {
+		if err = os.Remove(TestEntitySQLTestFileName); err != nil {
+			log.Fatal("failed to delete the file.")
+		}
+	}
+}
+
+func TestSQLUpdateOpponent(t *testing.T) {
+
+	// ファイルを削除する
+	if _, err := os.Stat(TestEntitySQLTestFileName); !os.IsNotExist(err) {
+		if err = os.Remove(TestEntitySQLTestFileName); err != nil {
+			log.Fatal("failed to delete the file.")
+		}
+	}
+
+	ent := NewSQL(TestEntitySQLTestFileName)
+
+	opp := Opponent{
+		UserName:     "hoge",
+		OpponentName: "fuga",
+		Num:          1,
+	}
+
+	if err := ent.AddOpponent(&opp); err != nil {
+		log.Fatal("registration failed")
+	}
+
+	if err := ent.UpdateOpponent(1, "hogehoge", "fugafuga", 3); err != nil {
+		log.Fatal("update failed")
+	}
+
+	keys, opps, err := ent.GetOpponent("hogehoge")
+	if err != nil {
+		log.Fatal("get failed.", err)
+	}
+	if len(keys) != 1 || len(opps) != 1 {
+		log.Fatal("update or get failed.", err)
+	}
+
+	// ファイルを削除する
+	if _, err := os.Stat(TestEntitySQLTestFileName); !os.IsNotExist(err) {
+		if err = os.Remove(TestEntitySQLTestFileName); err != nil {
+			log.Fatal("failed to delete the file.")
+		}
+	}
+}
+
+func TestSQLGetOpponent(t *testing.T) {
+
+	// ファイルを削除する
+	if _, err := os.Stat(TestEntitySQLTestFileName); !os.IsNotExist(err) {
+		if err = os.Remove(TestEntitySQLTestFileName); err != nil {
+			log.Fatal("failed to delete the file.")
+		}
+	}
+
+	ent := NewSQL(TestEntitySQLTestFileName)
+
+	opp := Opponent{
+		UserName:     "hoge",
+		OpponentName: "fuga",
+		Num:          1,
+	}
+
+	if err := ent.AddOpponent(&opp); err != nil {
+		log.Fatal("registration failed")
+	}
+
+	keys, opps, err := ent.GetOpponent("hoge")
+	if err != nil {
+		log.Fatal("get failed.", err)
+	}
+	fmt.Println(keys)
+	if len(opps) == 0 {
+		log.Fatal("get failed. len=0")
+	}
+	switch {
+	case opps[0].UserName != "hoge":
+		log.Fatal("UserName does not match")
+	case opps[0].OpponentName != "fuga":
+		log.Fatal("OpponentName does not match")
+	case opps[0].Num != 1:
+		log.Fatal("Num does not match")
 	}
 
 	// ファイルを削除する
